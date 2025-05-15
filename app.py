@@ -2,6 +2,7 @@ import os
 import base64
 import glob
 from flask import Flask, request, jsonify, send_file
+from PIL import Image
 from skimage import io
 from flask_cors import CORS
 import numpy as np
@@ -32,7 +33,6 @@ def save_drawing():
     if not image_data or category not in category_map:
         return jsonify({"error": "Datos inválidos"}), 400
 
-    # Extrae la parte base64 de la imagen (asumiendo PNG base64)
     prefix = "data:image/png;base64,"
     if not image_data.startswith(prefix):
         return jsonify({"error": "Formato de imagen inválido"}), 400
@@ -44,12 +44,19 @@ def save_drawing():
     except Exception:
         return jsonify({"error": "Error al decodificar la imagen"}), 400
 
-    folder = category_map[category]
-    filename = f"drawing_{uuid.uuid4().hex}.png"
-    filepath = os.path.join(UPLOAD_FOLDER, folder, filename)
+    # Carga la imagen en memoria y redimensiónala
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+        resized_image = image.resize((256, 256))  # Puedes cambiar el tamaño aquí
 
-    with open(filepath, "wb") as f:
-        f.write(image_bytes)
+        folder = category_map[category]
+        filename = f"drawing_{uuid.uuid4().hex}.png"
+        filepath = os.path.join(UPLOAD_FOLDER, folder, filename)
+
+        # Guarda la imagen redimensionada
+        resized_image.save(filepath, format="PNG")
+    except Exception as e:
+        return jsonify({"error": f"Error al procesar la imagen: {str(e)}"}), 500
 
     return jsonify({"message": "Imagen guardada", "filename": filename})
 
