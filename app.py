@@ -3,10 +3,11 @@ import base64
 import glob
 from flask import Flask, request, jsonify, send_file
 from PIL import Image
-from skimage import io
 from flask_cors import CORS
 import numpy as np
 import uuid
+from io import BytesIO 
+from skimage import io
 
 app = Flask(__name__)
 CORS(app)  # Permite peticiones desde otros orígenes (frontend)
@@ -44,16 +45,15 @@ def save_drawing():
     except Exception:
         return jsonify({"error": "Error al decodificar la imagen"}), 400
 
-    # Carga la imagen en memoria y redimensiónala
+    # ✅ Usa BytesIO del módulo `io`, no de skimage.io
     try:
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+        image = Image.open(BytesIO(image_bytes)).convert("RGBA")
         resized_image = image.resize((256, 256))  # Puedes cambiar el tamaño aquí
 
         folder = category_map[category]
         filename = f"drawing_{uuid.uuid4().hex}.png"
         filepath = os.path.join(UPLOAD_FOLDER, folder, filename)
 
-        # Guarda la imagen redimensionada
         resized_image.save(filepath, format="PNG")
     except Exception as e:
         return jsonify({"error": f"Error al procesar la imagen: {str(e)}"}), 500
