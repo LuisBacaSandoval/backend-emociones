@@ -102,6 +102,23 @@ def download_X():
 def download_y():
     return send_file('./y.npy')
 
+@app.route('/total-images', methods=['GET'])
+def total_images():
+    total = 0
+    category_counts = {}
+
+    for category in category_map.values():
+        folder_path = os.path.join(UPLOAD_FOLDER, category)
+        count = len(glob.glob(os.path.join(folder_path, "*.png")))
+        category_counts[category] = count
+        total += count
+
+    return jsonify({
+        "total_images": total,
+        "images_per_category": category_counts
+    })
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
